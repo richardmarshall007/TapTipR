@@ -1,5 +1,7 @@
 # TapTipR
 
+Send digital tips to your favourite waiters, waitresses, and service workers. Build relationships with the people who serve you.
+
 Digital tipping platform for hospitality and service workers — when there is no tip jar or card terminal tipping.
 
 ## Prototype
