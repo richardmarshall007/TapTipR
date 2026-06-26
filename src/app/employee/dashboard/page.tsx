@@ -5,7 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { TipQRCode } from "@/components/tip-qr-code";
-import { Badge, Button, Card } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  ListRow,
+  SectionTitle,
+  StatTile,
+} from "@/components/ui";
 import { DEMO_WORKPLACES } from "@/lib/demo-data";
 import { getWalletTipUrl, useSession, useTipHistory } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
@@ -34,18 +41,18 @@ export default function EmployeeDashboardPage() {
 
   if (!loaded || !user) {
     return (
-      <AppShell title="Your digital Wallet">
-        <p className="text-sm text-stone-500">Loading…</p>
+      <AppShell title="Your wallet">
+        <p className="font-mono text-sm text-dim">Syncing…</p>
       </AppShell>
     );
   }
 
   if (!user.employeeCode) {
     return (
-      <AppShell title="Your digital Wallet">
-        <Card>
-          <p className="text-sm text-stone-600">
-            Your wallet is missing a QR code. Please create a new wallet.
+      <AppShell title="Your wallet">
+        <Card glow>
+          <p className="text-sm text-muted">
+            Wallet address missing. Re-initialize to generate a QR code.
           </p>
           <Link href="/register" className="mt-4 inline-block">
             <Button>Create your digital Wallet</Button>
@@ -60,60 +67,57 @@ export default function EmployeeDashboardPage() {
   const employeeUrl = getWalletTipUrl(user.employeeCode, origin);
 
   return (
-    <AppShell title="Your digital Wallet" subtitle={user.name}>
+    <AppShell title="Your wallet" subtitle={user.name}>
       <div className="mb-4 flex flex-wrap gap-2">
         {user.verified ? (
           <Badge tone="success">
             <ShieldCheck className="mr-1 inline h-3 w-3" />
-            Verified by employer
+            Verified
           </Badge>
         ) : (
-          <Badge tone="warning">Pending employer verification</Badge>
+          <Badge tone="warning">Unverified</Badge>
         )}
         {workplace && (
-          <Badge>
+          <Badge tone="accent">
             {workplace.logoEmoji} {workplace.name}
           </Badge>
         )}
       </div>
 
-      <Card className="mb-4 text-center">
-        <p className="mb-1 text-sm font-medium text-emerald-700">Your unique QR code</p>
-        <h2 className="mb-4 text-lg font-semibold text-stone-900">
-          Customers scan to rate your service and send a tip
+      <Card className="mb-4 text-center" glow>
+        <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-400/80">
+          Receive address · QR
+        </p>
+        <h2 className="mb-4 text-sm text-muted">
+          Customers scan to rate service and send tips
         </h2>
         <TipQRCode value={employeeUrl} label={user.employeeCode} size={220} />
-        <p className="mt-4 text-xs text-stone-500 break-all">{employeeUrl}</p>
+        <p className="mt-4 break-all font-mono text-[10px] text-dim">{employeeUrl}</p>
       </Card>
 
       <div className="mb-4 grid grid-cols-2 gap-3">
-        <Card>
-          <p className="text-sm text-stone-500">Wallet balance</p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-700">
-            {formatCurrency(user.walletBalanceCents)}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-sm text-stone-500">Tips received</p>
-          <p className="mt-1 text-2xl font-semibold">{employeeTips.length}</p>
-        </Card>
+        <StatTile
+          label="Balance"
+          value={formatCurrency(user.walletBalanceCents)}
+          mono
+        />
+        <StatTile label="Tips in" value={String(employeeTips.length)} mono />
       </div>
 
       {workplace && (
         <Card className="mb-4">
           <div className="flex items-start gap-3">
-            <Building2 className="mt-0.5 h-5 w-5 text-emerald-700" />
+            <Building2 className="mt-0.5 h-5 w-5 text-cyan-400" />
             <div>
-              <p className="font-medium">Generic business QR</p>
-              <p className="mt-1 text-sm text-stone-600">
-                Your location also has a shared code so customers can pick who served
-                them.
+              <p className="font-medium text-zinc-100">Business QR pool</p>
+              <p className="mt-1 text-sm text-muted">
+                Shared location code — customers pick who served them.
               </p>
               <Link
                 href={`/tip/b/${workplace.businessCode}`}
-                className="mt-2 inline-block text-sm font-medium text-emerald-700"
+                className="mt-2 inline-block font-mono text-xs text-cyan-400 hover:text-cyan-300"
               >
-                Preview {workplace.name} flow →
+                Preview {workplace.businessCode} →
               </Link>
             </div>
           </div>
@@ -121,28 +125,30 @@ export default function EmployeeDashboardPage() {
       )}
 
       <section className="mb-4">
-        <h3 className="mb-2 text-sm font-semibold text-stone-700">Recent tips</h3>
+        <SectionTitle>Recent tips</SectionTitle>
         {employeeTips.length === 0 ? (
           <Card>
-            <p className="text-sm text-stone-500">
-              No tips yet. Show your QR code when you serve a customer.
+            <p className="font-mono text-sm text-dim">
+              No inbound tips. Share your QR to receive.
             </p>
           </Card>
         ) : (
           <div className="space-y-2">
             {employeeTips.slice(0, 5).map((tip) => (
-              <Card key={tip.id} className="flex items-center justify-between py-3">
+              <ListRow key={tip.id} className="flex items-center justify-between py-3">
                 <div>
-                  <p className="font-medium">{formatCurrency(tip.amountCents)}</p>
-                  <p className="text-xs text-stone-500">
+                  <p className="font-mono font-semibold text-emerald-400 font-tabular">
+                    {formatCurrency(tip.amountCents)}
+                  </p>
+                  <p className="font-mono text-[10px] text-dim">
                     from {tip.fromName}
                     {tip.npsScore !== undefined ? ` · NPS ${tip.npsScore}` : ""}
                   </p>
                 </div>
-                <p className="text-xs text-stone-400">
+                <p className="font-mono text-[10px] text-dim">
                   {new Date(tip.createdAt).toLocaleDateString()}
                 </p>
-              </Card>
+              </ListRow>
             ))}
           </div>
         )}
@@ -150,7 +156,7 @@ export default function EmployeeDashboardPage() {
 
       <Link href="/wallet">
         <Button variant="outline" className="w-full">
-          Manage wallet & withdrawals
+          Open wallet dashboard
         </Button>
       </Link>
     </AppShell>

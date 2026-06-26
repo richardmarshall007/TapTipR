@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import type { SessionUser } from "@/lib/types";
 import type { Workplace } from "@/lib/types";
-import { Badge, Button, Card, Input } from "@/components/ui";
+import { Badge, Button, Card, Input, Alert } from "@/components/ui";
 import {
   apiLookupEmployeeByCode,
   apiLookupWorkplaceByCode,
@@ -159,7 +159,7 @@ export function TipFlowClient({
     return (
       <AppShell title="Send a tip">
         <Card>
-          <p className="text-sm text-stone-500">Loading tip page…</p>
+          <p className="font-mono text-sm text-dim">Loading tip page…</p>
         </Card>
       </AppShell>
     );
@@ -169,7 +169,7 @@ export function TipFlowClient({
     return (
       <AppShell title="Invalid code">
         <Card>
-          <p className="text-stone-600">This QR code is not recognized.</p>
+          <p className="text-muted">This QR code is not recognized.</p>
           <Link href="/" className="mt-4 inline-block">
             <Button>Back home</Button>
           </Link>
@@ -294,15 +294,11 @@ export function TipFlowClient({
 
   return (
     <AppShell title="Send a tip" subtitle={workplaceName}>
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <Alert tone="error">{error}</Alert>}
 
       {!user && step !== "success" && (
         <Card className="mb-4">
-          <p className="mb-2 text-sm text-stone-600">Your name (optional)</p>
+          <p className="mb-2 text-sm text-muted">Your name (optional)</p>
           <Input
             value={guestName}
             onChange={(e) => setGuestName(e.target.value)}
@@ -316,8 +312,8 @@ export function TipFlowClient({
           <div className="mb-4 flex items-center gap-3">
             <span className="text-3xl">{workplaceMatch?.logoEmoji ?? "☕"}</span>
             <div>
-              <h1 className="text-xl font-semibold">{selectedEmployee.name}</h1>
-              <p className="text-sm text-stone-500">{workplaceName}</p>
+              <h1 className="text-xl font-semibold text-white">{selectedEmployee.name}</h1>
+              <p className="font-mono text-xs text-dim">{workplaceName}</p>
               {selectedEmployee.verified && (
                 <Badge tone="success" className="mt-1">
                   Verified employee
@@ -325,7 +321,7 @@ export function TipFlowClient({
               )}
             </div>
           </div>
-          <p className="mb-6 text-sm leading-relaxed text-stone-600">
+          <p className="mb-6 text-sm leading-relaxed text-muted">
             Would you like to rate your service at {workplaceName}, or leave a tip for{" "}
             {selectedEmployee.name}?
           </p>
@@ -350,8 +346,8 @@ export function TipFlowClient({
 
       {step === "employee" && workplaceMatch && (
         <Card>
-          <h2 className="mb-1 text-lg font-semibold">Who served you today?</h2>
-          <p className="mb-4 text-sm text-stone-600">
+          <h2 className="mb-1 text-lg font-semibold text-white">Who served you today?</h2>
+          <p className="mb-4 text-sm text-muted">
             Select your barista or server at {workplaceMatch.name}.
           </p>
           <div className="space-y-2">
@@ -363,9 +359,9 @@ export function TipFlowClient({
                   setSelectedEmployeeId(emp.id);
                   setStep("rating");
                 }}
-                className="flex w-full items-center justify-between rounded-xl border border-stone-200 px-4 py-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50/50"
+                className="flex w-full items-center justify-between rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-4 py-3 text-left transition hover:border-cyan-500/30 hover:bg-cyan-500/5"
               >
-                <span className="font-medium">{emp.name}</span>
+                <span className="font-medium text-zinc-100">{emp.name}</span>
                 {emp.verified ? (
                   <Badge tone="success">Verified</Badge>
                 ) : (
@@ -390,8 +386,8 @@ export function TipFlowClient({
 
       {step === "rating" && (
         <Card>
-          <h2 className="mb-1 text-lg font-semibold">Rate your experience</h2>
-          <p className="mb-4 text-sm text-stone-600">
+          <h2 className="mb-1 text-lg font-semibold text-white">Rate your experience</h2>
+          <p className="mb-4 text-sm text-muted">
             NPS: How likely are you to recommend {displayName} at {workplaceName}? (0–10)
           </p>
           <div className="mb-4 grid grid-cols-6 gap-2 sm:grid-cols-11">
@@ -400,10 +396,10 @@ export function TipFlowClient({
                 key={score}
                 type="button"
                 onClick={() => setNpsScore(score)}
-                className={`flex h-10 items-center justify-center rounded-lg border text-sm font-medium transition ${
+                className={`flex h-10 items-center justify-center rounded-lg border font-mono text-sm font-medium transition ${
                   npsScore === score
-                    ? "border-emerald-600 bg-emerald-600 text-white"
-                    : "border-stone-200 hover:border-emerald-300"
+                    ? "border-cyan-400 bg-cyan-500 text-black glow-accent"
+                    : "border-zinc-700 text-zinc-400 hover:border-cyan-500/40"
                 }`}
               >
                 {score}
@@ -434,8 +430,8 @@ export function TipFlowClient({
 
       {step === "amount" && (
         <Card>
-          <h2 className="mb-1 text-lg font-semibold">Choose tip amount</h2>
-          <p className="mb-4 text-sm text-stone-600">
+          <h2 className="mb-1 text-lg font-semibold text-white">Choose tip amount</h2>
+          <p className="mb-4 text-sm text-muted">
             Sending to {displayName}
             {!skipRating && npsScore !== null ? ` · You rated ${npsScore}/10` : ""}
           </p>
@@ -462,8 +458,8 @@ export function TipFlowClient({
             onChange={(e) => setCustomTip(e.target.value)}
           />
           {loaded && user && (
-            <p className="mt-3 text-sm text-stone-500">
-              Wallet balance: {formatCurrency(user.walletBalanceCents)}
+            <p className="mt-3 font-mono text-sm text-dim">
+              Balance: {formatCurrency(user.walletBalanceCents)}
             </p>
           )}
           <Button
@@ -479,14 +475,14 @@ export function TipFlowClient({
 
       {step === "topup" && (
         <Card>
-          <h2 className="mb-1 text-lg font-semibold">Top up to complete tip</h2>
-          <p className="mb-4 text-sm text-stone-600">
+          <h2 className="mb-1 text-lg font-semibold text-white">Top up to complete tip</h2>
+          <p className="mb-4 text-sm text-muted">
             Your balance is {formatCurrency(user?.walletBalanceCents ?? 0)}. Add funds
             with a card or bank transfer, then send your{" "}
             {formatCurrency(selectedTipAmount())} tip.
           </p>
-          <div className="rounded-xl bg-stone-50 p-4 text-sm text-stone-600">
-            <p className="font-medium text-stone-800">Demo top-up</p>
+          <div className="rounded-xl border border-zinc-700/80 bg-zinc-900/60 p-4 text-sm text-muted">
+            <p className="font-medium text-zinc-200">Demo top-up</p>
             <p className="mt-1">
               Production uses Stripe Checkout. You can load more than the tip (e.g. $30
               balance, $10 tip).
@@ -509,17 +505,17 @@ export function TipFlowClient({
       )}
 
       {step === "success" && (
-        <Card className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+        <Card className="text-center" glow>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 glow-accent">
             <CheckCircle2 className="h-8 w-8" />
           </div>
-          <h2 className="text-xl font-semibold">Tip sent!</h2>
-          <p className="mt-2 text-sm text-stone-600">
+          <h2 className="text-xl font-semibold text-white">Tip confirmed</h2>
+          <p className="mt-2 font-mono text-sm text-muted">
             {formatCurrency(selectedTipAmount())} was sent to {displayName} at{" "}
             {workplaceName}.
           </p>
           {!skipRating && npsScore !== null && (
-            <p className="mt-2 flex items-center justify-center gap-1 text-sm text-amber-700">
+            <p className="mt-2 flex items-center justify-center gap-1 text-sm text-amber-400">
               <Star className="h-4 w-4 fill-current" />
               NPS rating recorded: {npsScore}/10
             </p>

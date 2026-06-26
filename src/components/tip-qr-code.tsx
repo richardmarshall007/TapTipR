@@ -13,17 +13,14 @@ export function TipQRCode({
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="rounded-2xl border-4 border-emerald-600/10 bg-white p-4 shadow-inner">
-        <QRCodeSVG
-          value={value}
-          size={size}
-          level="M"
-          includeMargin
-          fgColor="#065f46"
-        />
+      <div className="relative rounded-2xl border border-cyan-500/30 bg-white p-4 glow-accent-strong">
+        <div className="pointer-events-none absolute inset-0 rounded-2xl scanline opacity-30" />
+        <QRCodeSVG value={value} size={size} level="M" includeMargin fgColor="#050508" />
       </div>
       {label && (
-        <p className="text-center text-xs font-medium text-stone-500">{label}</p>
+        <p className="text-center font-mono text-xs tracking-widest text-cyan-400/80">
+          {label}
+        </p>
       )}
     </div>
   );

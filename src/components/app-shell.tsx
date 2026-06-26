@@ -7,7 +7,7 @@ import { Home, QrCode, Wallet, UserCircle } from "lucide-react";
 
 const links = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/employee/dashboard", icon: QrCode, label: "My QR" },
+  { href: "/employee/dashboard", icon: QrCode, label: "QR" },
   { href: "/wallet", icon: Wallet, label: "Wallet" },
   { href: "/register", icon: UserCircle, label: "Account" },
 ];
@@ -17,7 +17,7 @@ export function MobileNav() {
   if (pathname.startsWith("/tip/")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-stone-200 bg-white/95 backdrop-blur md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800/80 bg-zinc-950/90 backdrop-blur-xl md:hidden">
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {links.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
@@ -26,11 +26,11 @@ export function MobileNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium",
-                active ? "text-emerald-700" : "text-stone-500"
+                "flex flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium uppercase tracking-wider",
+                active ? "text-cyan-400" : "text-zinc-500"
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className={cn("h-5 w-5", active && "drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]")} />
               {label}
             </Link>
           );
@@ -50,26 +50,33 @@ export function AppShell({
   subtitle?: string;
 }) {
   return (
-    <div className="min-h-full bg-[linear-gradient(180deg,#f0fdf4_0%,#fafaf9_28%)]">
-      <header className="border-b border-emerald-100/80 bg-white/70 backdrop-blur">
+    <div className="relative min-h-full crypto-bg">
+      <div className="crypto-grid-overlay" />
+      <header className="relative z-10 border-b border-zinc-800/80 bg-zinc-950/60 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-4">
           <div>
-            <Link href="/" className="text-lg font-semibold tracking-tight text-emerald-900">
-              TapTip<span className="text-emerald-600">R</span>
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-lg font-semibold tracking-tight text-white"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 font-mono text-xs text-cyan-400 glow-accent">
+                T
+              </span>
+              TapTip<span className="text-cyan-400">R</span>
             </Link>
             {title && (
-              <p className="mt-0.5 text-sm text-stone-500">
+              <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
                 {title}
                 {subtitle ? ` · ${subtitle}` : ""}
               </p>
             )}
           </div>
-          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-800">
-            Prototype
+          <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-widest text-cyan-400">
+            v0.1
           </span>
         </div>
       </header>
-      <main className="mx-auto max-w-lg px-4 py-6 pb-28">{children}</main>
+      <main className="relative z-10 mx-auto max-w-lg px-4 py-6 pb-28">{children}</main>
       <MobileNav />
     </div>
   );
