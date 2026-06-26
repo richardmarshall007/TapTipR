@@ -1,25 +1,39 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import type { SessionUser } from "@/lib/types";
+import type { Workplace } from "@/lib/types";
 import { Badge, Button, Card, Input } from "@/components/ui";
 import {
-  getEmployeeByCode,
+  apiLookupEmployeeByCode,
+  apiLookupWorkplaceByCode,
+  apiSendTip,
+  isApiUnavailableError,
+} from "@/lib/api/client";
+import {
+  getDemoEmployeeByCode,
   getEmployeesForWorkplace,
   getWorkplaceByCode,
 } from "@/lib/demo-data";
 import {
-  registerUser,
+  createCustomerSession,
+  creditRegisteredWallet,
+  sendTipViaApi,
   useSession,
-  useTipHistory,
-  useWalletHistory,
 } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 import { CheckCircle2, Star } from "lucide-react";
 
-type Step = "intro" | "employee" | "rating" | "amount" | "topup" | "success";
+type Step = "intro" | "employee" | "rating" | "amount" | "topup" | "success" | "loading";
+
+type EmployeeOption = {
+  id: string;
+  name: string;
+  employeeCode: string;
+  verified: boolean;
+};
 
 const TIP_PRESETS = [300, 500, 1000, 1500, 2000];
 
@@ -30,34 +44,126 @@ export function TipFlowClient({
   mode: "employee" | "business";
   code: string;
 }) {
-  const router = useRouter();
   const { user, setUser, updateBalance, loaded } = useSession();
-  const { addTip } = useTipHistory();
-  const { addTransaction } = useWalletHistory();
 
-  const employeeMatch = mode === "employee" ? getEmployeeByCode(code) : undefined;
-  const workplaceMatch =
-    mode === "business" ? getWorkplaceByCode(code) : employeeMatch?.workplace;
-
-  const [step, setStep] = useState<Step>(mode === "business" ? "employee" : "intro");
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
-    employeeMatch?.id ?? null
-  );
+  const [step, setStep] = useState<Step>("loading");
+  const [employeeMatch, setEmployeeMatch] = useState<
+    (EmployeeOption & { workplace: Workplace }) | null
+  >(null);
+  const [workplaceMatch, setWorkplaceMatch] = useState<Workplace | null>(null);
+  const [employeesOnShift, setEmployeesOnShift] = useState<EmployeeOption[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [npsScore, setNpsScore] = useState<number | null>(null);
   const [skipRating, setSkipRating] = useState(false);
   const [tipCents, setTipCents] = useState(500);
   const [customTip, setCustomTip] = useState("");
   const [guestName, setGuestName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const employeesOnShift = useMemo(() => {
-    if (!workplaceMatch) return [];
-    return getEmployeesForWorkplace(workplaceMatch.id);
-  }, [workplaceMatch]);
+  useEffect(() => {
+    async function load() {
+      setError(null);
+
+      if (mode === "employee") {
+        try {
+          const employee = await apiLookupEmployeeByCode(code);
+          if (employee) {
+            setEmployeeMatch({
+              id: employee.id,
+              name: employee.name,
+              employeeCode: employee.employeeCode,
+              verified: employee.verified,
+              workplace: {
+                id: employee.workplace.id,
+                name: employee.workplace.name,
+                slug: employee.workplace.slug,
+                businessCode: employee.workplace.businessCode,
+                logoEmoji: employee.workplace.logoEmoji,
+              },
+            });
+            setWorkplaceMatch({
+              id: employee.workplace.id,
+              name: employee.workplace.name,
+              slug: employee.workplace.slug,
+              businessCode: employee.workplace.businessCode,
+              logoEmoji: employee.workplace.logoEmoji,
+            });
+            setSelectedEmployeeId(employee.id);
+            setStep("intro");
+            return;
+          }
+        } catch (err) {
+          if (!isApiUnavailableError(err)) {
+            setError(err instanceof Error ? err.message : "Failed to load employee");
+            setStep("intro");
+            return;
+          }
+        }
+
+        const demo = getDemoEmployeeByCode(code);
+        if (demo) {
+          setEmployeeMatch(demo);
+          setWorkplaceMatch(demo.workplace);
+          setSelectedEmployeeId(demo.id);
+          setStep("intro");
+          return;
+        }
+
+        setStep("intro");
+        return;
+      }
+
+      try {
+        const result = await apiLookupWorkplaceByCode(code);
+        if (result) {
+          setWorkplaceMatch({
+            id: result.workplace.id,
+            name: result.workplace.name,
+            slug: result.workplace.slug,
+            businessCode: result.workplace.businessCode,
+            logoEmoji: result.workplace.logoEmoji,
+          });
+          setEmployeesOnShift(result.employees);
+          setStep("employee");
+          return;
+        }
+      } catch (err) {
+        if (!isApiUnavailableError(err)) {
+          setError(err instanceof Error ? err.message : "Failed to load workplace");
+          setStep("employee");
+          return;
+        }
+      }
+
+      const demoWorkplace = getWorkplaceByCode(code);
+      if (demoWorkplace) {
+        setWorkplaceMatch(demoWorkplace);
+        setEmployeesOnShift(getEmployeesForWorkplace(demoWorkplace.id));
+        setStep("employee");
+        return;
+      }
+
+      setStep("employee");
+    }
+
+    load();
+  }, [mode, code]);
 
   const selectedEmployee =
     employeeMatch ??
     employeesOnShift.find((e) => e.id === selectedEmployeeId) ??
     null;
+
+  if (step === "loading") {
+    return (
+      <AppShell title="Send a tip">
+        <Card>
+          <p className="text-sm text-stone-500">Loading tip page…</p>
+        </Card>
+      </AppShell>
+    );
+  }
 
   if (!workplaceMatch && !employeeMatch) {
     return (
@@ -75,16 +181,12 @@ export function TipFlowClient({
   const displayName = selectedEmployee?.name ?? workplaceMatch?.name ?? "Team member";
   const workplaceName = workplaceMatch?.name ?? "Location";
 
-  function ensureCustomerSession(): boolean {
-    if (user) return true;
+  function ensureCustomerSession(): SessionUser {
+    if (user && user.role === "customer") return user;
     const name = guestName.trim() || "Guest";
-    const session = registerUser({
-      name,
-      phone: "demo",
-      role: "customer",
-    });
+    const session = createCustomerSession(name);
     setUser(session);
-    return true;
+    return session;
   }
 
   function proceedToAmount() {
@@ -99,56 +201,105 @@ export function TipFlowClient({
     return tipCents;
   }
 
-  function handleSendTip() {
+  async function completeTipLocal(amount: number, fromName: string, sender: SessionUser) {
     if (!selectedEmployee) return;
-    ensureCustomerSession();
 
-    const amount = selectedTipAmount();
-    const currentUser = user ?? registerUser({ name: guestName || "Guest", phone: "demo", role: "customer" });
-
-    if (currentUser.walletBalanceCents < amount) {
-      setStep("topup");
-      return;
+    await updateBalance(-amount, "tip_sent", `Tip to ${selectedEmployee.name}`);
+    creditRegisteredWallet(selectedEmployee.id, amount);
+    if (sender.id === user?.id) {
+      const updated = { ...sender, walletBalanceCents: sender.walletBalanceCents - amount };
+      setUser(updated);
     }
-
-    completeTip(amount, currentUser.name);
-  }
-
-  function completeTip(amount: number, fromName: string) {
-    if (!selectedEmployee) return;
-
-    updateBalance(-amount);
-    addTransaction({
-      type: "tip_sent",
-      amountCents: -amount,
-      label: `Tip to ${selectedEmployee.name}`,
-    });
-    addTip({
-      fromName,
-      toEmployeeId: selectedEmployee.id,
-      toEmployeeName: selectedEmployee.name,
-      workplaceName,
-      amountCents: amount,
-      npsScore: skipRating ? undefined : npsScore ?? undefined,
-    });
     setStep("success");
   }
 
-  function handleTopUpAndTip() {
+  async function handleSendTip() {
+    if (!selectedEmployee) return;
+    setSubmitting(true);
+    setError(null);
+
     const amount = selectedTipAmount();
-    const deficit = amount - (user?.walletBalanceCents ?? 0);
+    const currentUser = user?.role === "customer" ? user : ensureCustomerSession();
+
+    try {
+      const result = await sendTipViaApi({
+        fromProfileId: currentUser.role === "customer" ? currentUser.id : null,
+        fromName: currentUser.name,
+        toProfileId: selectedEmployee.id,
+        amountCents: amount,
+        npsScore: skipRating ? undefined : npsScore ?? undefined,
+        workplaceId: workplaceMatch?.id,
+      });
+
+      if (result === null) {
+        if (currentUser.walletBalanceCents < amount) {
+          setStep("topup");
+          return;
+        }
+        await completeTipLocal(amount, currentUser.name, currentUser);
+        return;
+      }
+
+      if (result.requiresTopUp) {
+        setStep("topup");
+        return;
+      }
+
+      if (result.sender) setUser(result.sender);
+      setStep("success");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send tip");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleTopUpAndTip() {
+    if (!selectedEmployee) return;
+    setSubmitting(true);
+    setError(null);
+
+    const amount = selectedTipAmount();
+    const currentUser = user?.role === "customer" ? user : ensureCustomerSession();
+    const deficit = amount - currentUser.walletBalanceCents;
     const topUp = Math.max(deficit, 1000);
-    updateBalance(topUp);
-    addTransaction({
-      type: "top_up",
-      amountCents: topUp,
-      label: "Wallet top-up during tip (demo)",
-    });
-    completeTip(amount, (user?.name ?? guestName) || "Guest");
+
+    try {
+      const result = await apiSendTip({
+        fromProfileId: currentUser.role === "customer" ? currentUser.id : null,
+        fromName: currentUser.name,
+        toProfileId: selectedEmployee.id,
+        amountCents: amount,
+        npsScore: skipRating ? undefined : npsScore ?? undefined,
+        workplaceId: workplaceMatch?.id,
+        topUpCents: topUp,
+      });
+
+      if (result.sender) setUser(result.sender);
+      setStep("success");
+    } catch (err) {
+      if (isApiUnavailableError(err)) {
+        await updateBalance(topUp, "top_up", "Wallet top-up during tip (demo)");
+        await completeTipLocal(amount, currentUser.name, {
+          ...currentUser,
+          walletBalanceCents: currentUser.walletBalanceCents + topUp,
+        });
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Failed to send tip");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <AppShell title="Send a tip" subtitle={workplaceName}>
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       {!user && step !== "success" && (
         <Card className="mb-4">
           <p className="mb-2 text-sm text-stone-600">Your name (optional)</p>
@@ -315,8 +466,13 @@ export function TipFlowClient({
               Wallet balance: {formatCurrency(user.walletBalanceCents)}
             </p>
           )}
-          <Button className="mt-4 w-full" size="lg" onClick={handleSendTip}>
-            Send {formatCurrency(selectedTipAmount())} tip
+          <Button
+            className="mt-4 w-full"
+            size="lg"
+            onClick={handleSendTip}
+            disabled={submitting}
+          >
+            {submitting ? "Sending…" : `Send ${formatCurrency(selectedTipAmount())} tip`}
           </Button>
         </Card>
       )}
@@ -336,8 +492,13 @@ export function TipFlowClient({
               balance, $10 tip).
             </p>
           </div>
-          <Button className="mt-4 w-full" size="lg" onClick={handleTopUpAndTip}>
-            Add funds & send tip
+          <Button
+            className="mt-4 w-full"
+            size="lg"
+            onClick={handleTopUpAndTip}
+            disabled={submitting}
+          >
+            {submitting ? "Processing…" : "Add funds & send tip"}
           </Button>
           <Link href="/wallet" className="mt-2 block">
             <Button variant="ghost" className="w-full">

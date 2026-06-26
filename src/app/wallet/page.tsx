@@ -12,35 +12,27 @@ const TOP_UP_PRESETS = [1000, 2000, 3000, 5000];
 
 export default function WalletPage() {
   const { user, setUser, updateBalance, loaded } = useSession();
-  const { transactions, addTransaction } = useWalletHistory();
+  const { transactions, refresh } = useWalletHistory(user?.id);
   const [topUpAmount, setTopUpAmount] = useState("3000");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
-  function handleTopUp(amountCents: number) {
+  async function handleTopUp(amountCents: number) {
     if (!user) return;
-    updateBalance(amountCents);
-    addTransaction({
-      type: "top_up",
-      amountCents,
-      label: "Wallet top-up (demo card)",
-    });
+    await updateBalance(amountCents, "top_up", "Wallet top-up (demo card)");
+    await refresh();
     setMessage(`Added ${formatCurrency(amountCents)} to your wallet.`);
   }
 
-  function handleWithdraw() {
+  async function handleWithdraw() {
     if (!user) return;
     const cents = Math.round(parseFloat(withdrawAmount) * 100);
     if (!cents || cents <= 0 || cents > user.walletBalanceCents) {
       setMessage("Enter a valid amount within your balance.");
       return;
     }
-    updateBalance(-cents);
-    addTransaction({
-      type: "withdraw",
-      amountCents: -cents,
-      label: "Bank transfer (Visa Direct demo)",
-    });
+    await updateBalance(-cents, "withdraw", "Bank transfer (Visa Direct demo)");
+    await refresh();
     setWithdrawAmount("");
     setMessage(`Withdrew ${formatCurrency(cents)} to linked bank account.`);
   }

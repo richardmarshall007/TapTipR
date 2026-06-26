@@ -7,39 +7,60 @@ import { AppShell } from "@/components/app-shell";
 import { TipQRCode } from "@/components/tip-qr-code";
 import { Badge, Button, Card } from "@/components/ui";
 import { DEMO_WORKPLACES } from "@/lib/demo-data";
-import { useSession, useTipHistory } from "@/lib/session";
+import { getWalletTipUrl, useSession, useTipHistory } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 import { Building2, ShieldCheck } from "lucide-react";
 
 export default function EmployeeDashboardPage() {
   const router = useRouter();
-  const { user, loaded } = useSession();
-  const { tips } = useTipHistory();
+  const { user, loaded, refreshFromStorage } = useSession();
+  const { tips, refresh } = useTipHistory(user?.id);
 
   const workplace = DEMO_WORKPLACES.find((w) => w.id === user?.workplaceId);
-  const employeeTips = tips.filter((t) => t.toEmployeeName === user?.name);
-  const totalEarned = employeeTips.reduce((sum, t) => sum + t.amountCents, 0);
+  const employeeTips = tips.filter(
+    (t) => t.toEmployeeId === user?.id || t.toEmployeeName === user?.name
+  );
 
   useEffect(() => {
-    if (loaded && (!user || user.role !== "employee")) {
-      router.replace("/register?role=employee");
+    if (loaded && !user) {
+      router.replace("/register");
     }
   }, [loaded, user, router]);
 
+  useEffect(() => {
+    refreshFromStorage();
+    refresh();
+  }, [tips, refreshFromStorage, refresh]);
+
   if (!loaded || !user) {
     return (
-      <AppShell title="Employee dashboard">
+      <AppShell title="Your digital Wallet">
         <p className="text-sm text-stone-500">Loading…</p>
+      </AppShell>
+    );
+  }
+
+  if (!user.employeeCode) {
+    return (
+      <AppShell title="Your digital Wallet">
+        <Card>
+          <p className="text-sm text-stone-600">
+            Your wallet is missing a QR code. Please create a new wallet.
+          </p>
+          <Link href="/register" className="mt-4 inline-block">
+            <Button>Create your digital Wallet</Button>
+          </Link>
+        </Card>
       </AppShell>
     );
   }
 
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://taptipr.com";
-  const employeeUrl = `${origin}/tip/e/${user.employeeCode}`;
+  const employeeUrl = getWalletTipUrl(user.employeeCode, origin);
 
   return (
-    <AppShell title="Employee dashboard" subtitle={user.name}>
+    <AppShell title="Your digital Wallet" subtitle={user.name}>
       <div className="mb-4 flex flex-wrap gap-2">
         {user.verified ? (
           <Badge tone="success">
@@ -57,9 +78,9 @@ export default function EmployeeDashboardPage() {
       </div>
 
       <Card className="mb-4 text-center">
-        <p className="mb-1 text-sm text-stone-500">Show this to customers</p>
-        <h2 className="mb-4 text-lg font-semibold">
-          &ldquo;Scan to rate my service or leave a tip&rdquo;
+        <p className="mb-1 text-sm font-medium text-emerald-700">Your unique QR code</p>
+        <h2 className="mb-4 text-lg font-semibold text-stone-900">
+          Customers scan to rate your service and send a tip
         </h2>
         <TipQRCode value={employeeUrl} label={user.employeeCode} size={220} />
         <p className="mt-4 text-xs text-stone-500 break-all">{employeeUrl}</p>
@@ -69,7 +90,7 @@ export default function EmployeeDashboardPage() {
         <Card>
           <p className="text-sm text-stone-500">Wallet balance</p>
           <p className="mt-1 text-2xl font-semibold text-emerald-700">
-            {formatCurrency(user.walletBalanceCents + totalEarned)}
+            {formatCurrency(user.walletBalanceCents)}
           </p>
         </Card>
         <Card>
@@ -104,7 +125,7 @@ export default function EmployeeDashboardPage() {
         {employeeTips.length === 0 ? (
           <Card>
             <p className="text-sm text-stone-500">
-              No tips yet. Share your QR when you serve a customer.
+              No tips yet. Show your QR code when you serve a customer.
             </p>
           </Card>
         ) : (

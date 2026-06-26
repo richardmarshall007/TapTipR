@@ -53,4 +53,8 @@ See [docs/PRODUCT_DESIGN.md](docs/PRODUCT_DESIGN.md) for architecture, payment s
 - Tailwind CSS 4
 - Client-side demo session (localStorage)
 
-Payments and auth are mocked in this prototype.
+## Backend (Supabase)
+
+Data is stored in **Supabase Postgres** via Next.js API routes. See [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) for setup.
+
+Without Supabase credentials, the app falls back to browser localStorage (demo mode).

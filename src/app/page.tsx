@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { Badge, Button, Card } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { DEMO_EMPLOYEES, DEMO_WORKPLACES } from "@/lib/demo-data";
-import { ArrowRight, Coffee, HeartHandshake, QrCode, Wallet } from "lucide-react";
+import { ArrowRight, Coffee } from "lucide-react";
 
 export default function HomePage() {
   const demoEmployee = DEMO_EMPLOYEES[0];
@@ -10,68 +10,20 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      <section className="mb-8">
-        <Badge tone="success" className="mb-3">
-          Stored-value tipping wallet
-        </Badge>
+      <section className="mb-10">
         <h1 className="text-3xl font-semibold tracking-tight text-stone-900">
-          Tip service workers when there&apos;s no jar or terminal
+          Welcome to TapTipR!
         </h1>
-        <p className="mt-3 text-base leading-relaxed text-stone-600">
-          Employees share a QR code. Customers scan, optionally rate their experience,
-          load a TapTipR wallet, and send a digital tip in seconds.
+        <p className="mt-4 text-base leading-relaxed text-stone-600">
+          A digital wallet that allows you to earn and be recognized for your great
+          service. Simply create an account and start earning digital tips today.
         </p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link href="/register?role=employee" className="flex-1">
-            <Button className="w-full" size="lg">
-              I receive tips
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href={`/tip/e/${demoEmployee.employeeCode}`} className="flex-1">
-            <Button variant="secondary" className="w-full" size="lg">
-              Try demo tip flow
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      <section className="mb-8 grid gap-3">
-        <Card className="flex gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <QrCode className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-stone-900">Employee or business QR</h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Personal code for waitstaff and baristas, or a generic code for the whole
-              location.
-            </p>
-          </div>
-        </Card>
-        <Card className="flex gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <HeartHandshake className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-stone-900">Rate & tip</h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Optional NPS rating, preset amounts, and wallet top-up when balance is low.
-            </p>
-          </div>
-        </Card>
-        <Card className="flex gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <Wallet className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-stone-900">Spend or withdraw</h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Employees keep tips in TapTipR, spend at merchants, or transfer to bank via
-              Visa Direct.
-            </p>
-          </div>
-        </Card>
+        <Link href="/register" className="mt-6 block">
+          <Button className="w-full" size="lg">
+            Create your digital Wallet
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Link>
       </section>
 
       <section>
