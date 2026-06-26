@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TapTipR
 
-## Getting Started
+Digital tipping platform for hospitality and service workers — when there is no tip jar or card terminal tipping.
 
-First, run the development server:
+## Prototype
+
+Interactive Next.js prototype demonstrating:
+
+- Employee onboarding and personal QR codes
+- Business (generic) QR with employee selection
+- NPS rating flow (optional)
+- Stored-value wallet top-up and tipping
+- Employee withdrawal flow (demo)
+
+## Quick start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo flows
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Flow | URL |
+|------|-----|
+| Home | `/` |
+| Employee signup | `/register?role=employee` |
+| Employee QR dashboard | `/employee/dashboard` |
+| Tip Maria (employee QR) | `/tip/e/MARIA-7K2P` |
+| Tip Starbucks (business QR) | `/tip/b/SBUX-DEMO` |
+| Wallet | `/wallet` |
 
-## Learn More
+## Product design
 
-To learn more about Next.js, take a look at the following resources:
+See [docs/PRODUCT_DESIGN.md](docs/PRODUCT_DESIGN.md) for architecture, payment strategy (Stripe + Visa Direct), data model, and roadmap.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Production path
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Phase | Integration |
+|-------|-------------|
+| Auth | Phone OTP (Clerk / Twilio Verify) |
+| Top-ups | Stripe Checkout Sessions |
+| Payouts | Stripe Connect or Visa Direct |
+| Mobile | PWA now → React Native / Expo later |
 
-## Deploy on Vercel
+## Tech stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Next.js 16 (App Router)
+- Tailwind CSS 4
+- Client-side demo session (localStorage)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Payments and auth are mocked in this prototype.
